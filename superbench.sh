@@ -825,8 +825,6 @@ bench_all(){
 	next;
 #	geekbench4;
 #	next;
-	StreamingMediaUnlockTest;
-	next;
 	print_io;
 	next;
 	print_china_speedtest;
