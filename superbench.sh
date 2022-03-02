@@ -620,27 +620,34 @@ print_besttrace_test(){
 
 function UnlockNetflixTest() {
     echo -n -e " Netflix              : ->\c";
-    local result1=$(curl --user-agent "${BrowserUA}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
+    local result1=$(curl $useNIC -${1} --user-agent "${UA_Browser}" -fsL --write-out %{http_code} --output /dev/null --max-time 10 "https://www.netflix.com/title/81215567" 2>&1)
 	
     if [[ "$result1" == "404" ]];then
-        echo -n -e "\r Netflix              : ${YELLOW}Originals Only${PLAIN}\n" | tee -a $log
+        echo -n -e "\r Netflix:\t\t\t\t${Font_Yellow}Originals Only${Font_Suffix}\n"
+        return;
+		
 	elif  [[ "$result1" == "403" ]];then
-        echo -n -e "\r Netflix              : ${RED}No${PLAIN}\n" | tee -a $log
+        echo -n -e "\r Netflix:\t\t\t\t${Font_Red}No${Font_Suffix}\n"
+        return;
+		
 	elif [[ "$result1" == "200" ]];then
-		local region=`tr [:lower:] [:upper:] <<< $(curl --user-agent "${BrowserUA}" -fs --max-time 10 --write-out %{redirect_url} --output /dev/null "https://www.netflix.com/title/80018499" | cut -d '/' -f4 | cut -d '-' -f1)` ;
+		local region=`tr [:lower:] [:upper:] <<< $(curl $useNIC -${1} --user-agent "${UA_Browser}" -fs --max-time 10 --write-out %{redirect_url} --output /dev/null "https://www.netflix.com/title/80018499" | cut -d '/' -f4 | cut -d '-' -f1)` ;
 		if [[ ! -n "$region" ]];then
 			region="US";
 		fi
-		echo -n -e "\r Netflix              : ${GREEN}Yes (Region: ${region})${PLAIN}\n" | tee -a $log
+		echo -n -e "\r Netflix:\t\t\t\t${Font_Green}Yes (Region: ${region})${Font_Suffix}\n"
+		return;
+		
 	elif  [[ "$result1" == "000" ]];then
-		echo -n -e "\r Netflix              : ${RED}Network connection failed${PLAIN}\n" | tee -a $log
-    fi   
+		echo -n -e "\r Netflix:\t\t\t\t${Font_Red}Failed (Network Connection)${Font_Suffix}\n"
+        return;
+    fi  
 }
 
 function UnlockYouTubePremiumTest() {
     echo -n -e " YouTube Premium      : ->\c";
-    local tmpresult=$(curl -sS -H "Accept-Language: en" "https://www.youtube.com/premium" 2>&1 )
-    local region=$(curl --user-agent "${BrowserUA}" -sL --max-time 10 "https://www.youtube.com/premium" | grep "countryCode" | sed 's/.*"countryCode"//' | cut -f2 -d'"')
+    local tmpresult=$(curl $useNIC -${1} -sS -H "Accept-Language: en" "https://www.youtube.com/premium" 2>&1 )
+    local region=$(curl $useNIC --user-agent "${UA_Browser}" -${1} -sL --max-time 10 "https://www.youtube.com/premium" | grep "countryCode" | sed 's/.*"countryCode"//' | cut -f2 -d'"')
 	if [ -n "$region" ]; then
         sleep 0
 	else
@@ -653,27 +660,30 @@ function UnlockYouTubePremiumTest() {
 	fi	
 	
     if [[ "$tmpresult" == "curl"* ]];then
-        echo -n -e "\r YouTube Premium      : ${RED}Network connection failed${PLAIN}\n"  | tee -a $log
+        echo -n -e "\r YouTube Premium:\t\t\t${Font_Red}Failed (Network Connection)${Font_Suffix}\n"
         return;
     fi
     
     local result=$(echo $tmpresult | grep 'Premium is not available in your country')
     if [ -n "$result" ]; then
-        echo -n -e "\r YouTube Premium      : ${RED}No${PLAIN} ${PLAIN}${GREEN} (Region: $region)${PLAIN} \n" | tee -a $log
+        echo -n -e "\r YouTube Premium:\t\t\t${Font_Red}No${Font_Suffix} ${Font_Green} (Region: $region)${Font_Suffix} \n"
         return;
 		
     fi
-    local result=$(echo $tmpresult | grep 'YouTube and YouTube Music ad-free')
-    if [ -n "$result" ]; then
-        echo -n -e "\r YouTube Premium      : ${GREEN}Yes (Region: $region)${PLAIN}\n" | tee -a $log
+    local result=$(echo $tmpresult | grep 'manageSubscriptionButton')
+    if [ -n "$result" ] ; then
+        echo -n -e "\r YouTube Premium:\t\t\t${Font_Green}Yes (Region: $region)${Font_Suffix}\n"
         return;
 	else
-		echo -n -e "\r YouTube Premium      : ${RED}Failed${PLAIN}\n" | tee -a $log
-    fi
+		echo -n -e "\r YouTube Premium:\t\t\t${Font_Red}Failed${Font_Suffix}\n"
+		
+    fi	
+	
+ 
 }
 
 function YouTubeCDNTest() {
-        echo -n -e " YouTube CDN:\t\t\t\t->\c";
+        echo -n -e " YouTube CDN      : ->\c";
 	local tmpresult=$(curl $useNIC -${1} ${ssll} -sS --max-time 10 https://redirector.googlevideo.com/report_mapping 2>&1)
     
     if [[ "$tmpresult" == "curl"* ]];then
