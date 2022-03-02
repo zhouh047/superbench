@@ -333,7 +333,6 @@ ip_info4(){
 	as_tmp=$(python tools.py geoip as)
 	asn=$(echo $as_tmp | awk -F ' ' '{print $1}')
 	org=$(python tools.py geoip org)
-	local region
 	if [ -z "ip_date" ]; then
 		echo $ip_date
 		echo "hala"
