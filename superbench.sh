@@ -673,31 +673,27 @@ function UnlockYouTubePremiumTest() {
 }
 
 function YouTubeCDNTest() {
-    echo -n -e " YouTube CDN          : ->\c";
-	local tmpresult=$(curl -sS --max-time 10 https://redirector.googlevideo.com/report_mapping 2>&1)
+        echo -n -e " YouTube CDN:\t\t\t\t->\c";
+	local tmpresult=$(curl $useNIC -${1} ${ssll} -sS --max-time 10 https://redirector.googlevideo.com/report_mapping 2>&1)
     
     if [[ "$tmpresult" == "curl"* ]];then
-        echo -n -e "\r YouTube Region       : ${RED}Network connection failed${PLAIN}\n" | tee -a $log
+        echo -n -e "\r YouTube Region:\t\t\t${Font_Red}Check Failed (Network Connection)${Font_Suffix}\n"
         return;
     fi
 	
-	iata=$(echo $tmpresult | grep router | cut -f2 -d'"' | cut -f2 -d"." | sed 's/.\{2\}$//' | tr [:lower:] [:upper:])
-	checkfailed=$(echo $tmpresult | grep "=>")
+	local iata=$(echo $tmpresult | grep router | cut -f2 -d'"' | cut -f2 -d"." | sed 's/.\{2\}$//' | tr [:lower:] [:upper:])
+	local checkfailed=$(echo $tmpresult | grep "=>")
 	if [ -z "$iata" ] && [ -n "$checkfailed" ];then
 		CDN_ISP=$(echo $checkfailed | awk '{print $3}' | cut -f1 -d"-" | tr [:lower:] [:upper:])
-		echo -n -e "\r YouTube CDN          : ${YELLOW}Associated with $CDN_ISP${PLAIN}\n" | tee -a $log
+		echo -n -e "\r YouTube CDN:\t\t\t\t${Font_Yellow}Associated with [$CDN_ISP]${Font_Suffix}\n"
 		return;
 	elif [ -n "$iata" ];then
-		curl $useNIC -s --max-time 10 "https://www.iata.org/AirportCodesSearch/Search?currentBlock=314384&currentPage=12572&airport.search=${iata}" > ~/iata.txt
-		local line=$(cat ~/iata.txt | grep -n "<td>"$iata | awk '{print $1}' | cut -f1 -d":")
-		local nline=$(expr $line - 2)
-		local location=$(cat ~/iata.txt | awk NR==${nline} | sed 's/.*<td>//' | cut -f1 -d"<")
-		echo -n -e "\r YouTube CDN          : ${GREEN}$location${PLAIN}\n" | tee -a $log
-		rm ~/iata.txt
+		local lineNo=$(curl $useNIC -s --max-time 10 "https://raw.githubusercontent.com/lmc999/RegionRestrictionCheck/main/reference/IATACode.txt" | cut -f3 -d"|" | sed -n  "/${iata}/=")
+		local location=$(curl $useNIC -s --max-time 10 "https://raw.githubusercontent.com/lmc999/RegionRestrictionCheck/main/reference/IATACode.txt" | awk "NR==${lineNo}" | cut -f1 -d"|" | sed -e 's/^[[:space:]]*//')
+		echo -n -e "\r YouTube CDN:\t\t\t\t${Font_Green}$location${Font_Suffix}\n"
 		return;
 	else
-		echo -n -e "\r YouTube CDN          : ${RED}Undetectable${PLAIN}\n" | tee -a $log
-		rm ~/iata.txt
+		echo -n -e "\r YouTube CDN:\t\t\t\t${Font_Red}Undetectable${Font_Suffix}\n"
 		return;
 	fi
 	
